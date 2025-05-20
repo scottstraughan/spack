@@ -1,0 +1,56 @@
+from spack.package import *
+from spack_repo.builtin.build_systems.codeplay_oneapi import CodeplayOneapi
+from spack_repo.builtin.build_systems.generic import Package
+
+
+class CodeplayOneapiAmd(Package):
+    """
+    Codeplay oneAPI for AMD GPUs package.
+
+    Plugin can be installed in the following ways:
+        - spack install codeplay-oneapi-amd@6.0-2025.1.0
+        - spack install codeplay-oneapi-amd@6.0
+        - spack install codeplay-oneapi-amd@2025.1.0
+        - spack install codeplay-oneapi-amd
+    """
+
+    # Supported versions list
+    supported_versions = [
+        {
+            "version": "2025.1.0",
+            "oneapi_compiler_version": "2025.1",
+            "sha256": "2261f35f7f28c77c4adc9541c61d044f2dab430e27243b2395af0e32a1a1c701",
+            "ur": "0.11.7",
+            "supported_driver_versions": ["6.0", "5.7", "5.4"]
+        }
+    ]
+
+    # Current maintainer of the packages
+    maintainers("scottstraughan")
+
+    # Dependencies
+    depends_on("intel-oneapi-compilers")
+
+    # Create all the versions
+    for current_version in CodeplayOneapi.iterate_version_map(supported_versions):
+        version(current_version[0], current_version[1], extension="sh", expand=False, preferred=current_version[2])
+
+    def __init__(self, spec):
+        super().__init__(spec)
+
+        # Note: We can't use inheritance since many of the fields are class fields and data would leak between
+        # the shared plugins. Instead, we will use composition of a base plugin and use shared methods.
+        self.codeplay_oneapi = CodeplayOneapi(spec, CodeplayOneapiAmd.supported_versions, "amd")
+
+    def install(self, spec, prefix):
+        """
+        Install the plugin.
+        """
+        self.codeplay_oneapi.install_plugin(spec, self.stage, prefix, self.version)
+
+    def url_for_version(self, version):
+        """
+        Generate a URL to download from developer portal.
+        """
+        return self.codeplay_oneapi.url_for_version(version)
+
