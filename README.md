@@ -3,7 +3,7 @@
 ### Step 1) Setup Spack
 
 ```bash
-    git clone --depth=2 --branch=codeplay-oneapi-plugins https://github.com/scottstraughan/spack.git ~/spack
+    git clone --depth=2 --branch=codeplay-oneapi https://github.com/scottstraughan/spack.git ~/spack
     cd ~/spack && . share/spack/setup-env.sh
     spack bootstrap now
 ```
