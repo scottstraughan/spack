@@ -8,9 +8,8 @@ class CodeplayOneapiAmd(Package):
     Codeplay oneAPI for AMD GPUs package.
 
     Plugin can be installed in the following ways:
-        - spack install codeplay-oneapi-amd@6.0-2025.1.0
-        - spack install codeplay-oneapi-amd@6.0
         - spack install codeplay-oneapi-amd@2025.1.0
+        - spack install codeplay-oneapi-amd@2025.1.0 +hip-5.7
         - spack install codeplay-oneapi-amd
     """
 
@@ -40,6 +39,11 @@ class CodeplayOneapiAmd(Package):
         # Pin the version to the correct intel-oneapi-compilers package
         depends_on(f"intel-oneapi-compilers@{current_version['oneapi_compiler_version']}",
                    when=f"@{current_version['version']}")
+
+    # Iterate all supported driver version, using variants to allow users to select correct version
+    for index, driver_version in enumerate(CodeplayOneapi.iterate_all_driver_versions(supported_versions)):
+        # Variant, used for specifying ROCm driver version
+        variant(f"hip-{driver_version}", default=index == 0, description=f"Enable ROCm {driver_version} driver.")
 
     def __init__(self, spec):
         super().__init__(spec)

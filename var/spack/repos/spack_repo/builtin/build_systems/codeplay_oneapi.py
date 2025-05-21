@@ -26,7 +26,6 @@ class CodeplayOneapi:
         args = "?product=oneapi"
         args += f"&variant={self.gpu_vendor}"
         args += f"&version={self._package_version(version_)}"
-        args += f"&filters[]={self._gpu_driver_version(version_)}"
         args += f"&filters[]=linux"
 
         return f"https://developer.codeplay.com/api/v1/products/download{args}"
@@ -36,19 +35,20 @@ class CodeplayOneapi:
         Install the plugin into the prefix directory and create symlinks into the oneapi compiler directory.
         """
         print("Resolved version: ")
-        print(json.dumps(self._get_supported_version(version_)))
+        print(json.dumps(spec))
 
         if not spec.satisfies("%oneapi"):
             raise InstallError("Oneapi is not satisfied")
 
-        print("OneAPI is satisfied!")
+        target_driver_version = self._get_target_driver_version(version_, spec)
+
+        print(f"OneAPI is satisfied! Targeting {target_driver_version}")
 
         oneapi_base_path = os.path.join(
             spec["intel-oneapi-compilers"].prefix,
             "compiler",
             self._oneapi_compiler_version(version_),
-            "lib"
-        )
+            "lib")
 
         # Run the plugin installing in extract only mode
         bash = Executable("bash")
@@ -57,11 +57,11 @@ class CodeplayOneapi:
         print('Installer extracted successfully')
 
         # Install the plugins into all oneapi installation
-        self._install_into_oneapi(prefix, version_, oneapi_base_path)
+        self._install_into_oneapi(prefix, version_, target_driver_version, oneapi_base_path)
 
         print(f"oneAPI for {self.gpu_vendor} ({self.backend_name}) plugin installation complete.")
 
-    def _install_into_oneapi(self, prefix, version_, oneapi_base_path):
+    def _install_into_oneapi(self, prefix, version_, target_driver_version, oneapi_base_path):
         """
         Create all the symlinks into the oneapi compiler directory.
         """
@@ -69,7 +69,7 @@ class CodeplayOneapi:
 
         # Install the plugin files
         lib_filename = (f"{self.backend_name}"
-                        f"-{self._gpu_driver_version(version_)}"
+                        f"-{target_driver_version}"
                         f"-libur_adapter_{self.backend_name}.so.{self._universal_runtime(version_)}")
 
         source_lib_path = os.path.join(os.getcwd(), lib_filename)
@@ -108,59 +108,16 @@ class CodeplayOneapi:
         return self.supported_version_list[0]
 
     def _get_supported_version(self, version_):
-        """
-        We can accept various version formats. For example, we will try to the resolve the following:
-        - codeplay-oneapi-amd@6.0-2025.1.0
-        - codeplay-oneapi-amd@6.0
-        - codeplay-oneapi-amd@2025.1.0
-        - codeplay-oneapi-amd
-        """
         version_ = str(version_)
 
         if version_ is None:
             return self._get_latest_supported_version()
 
-        package_version = None
-        driver_version = None
+        for supported_version in self.supported_version_list:
+            if supported_version["version"] == version_:
+                return supported_version
 
-        if "-" in version_:
-            parts = version_.split("-")
-            driver_version = parts[0]
-            package_version = parts[1]
-
-        found_version_reference = self._get_supported_version_reference(package_version, driver_version)
-
-        # If we have not resolved any version reference by both package and driver version, attempt to load by
-        # package version only
-        if not found_version_reference:
-            found_version_reference = self._get_supported_version_reference(version_, None)
-
-        # If we have not resolved any version reference by both package and driver version, attempt to load by
-        # driver version only
-        if not found_version_reference:
-            found_version_reference = self._get_supported_version_reference(None, version_)
-
-        if not found_version_reference:
-            raise InstallError(f"Could not satisfy a version reference based on version '{version_}'.")
-
-        return found_version_reference
-
-    def _get_supported_version_reference(self, package_version, driver_version):
-        if package_version is not None:
-            found_version = self._get_by_package_version(package_version)
-        else:
-            found_version = self._get_latest_supported_version()
-
-        if found_version is None:
-            return None
-
-        if driver_version is not None:
-            if driver_version in found_version["supported_driver_versions"]:
-                return found_version
-
-            return None
-        else:
-            return driver_version
+        raise InstallError(f"Could not satisfy a version reference based on version '{version_}'.")
 
     def _get_by_package_version(self, package_version):
         """
@@ -179,21 +136,6 @@ class CodeplayOneapi:
         supported_version_reference = self._get_supported_version(version_)
         return supported_version_reference["version"]
 
-    def _gpu_driver_version(self, version_):
-        """
-        Returns something like 6.0
-        """
-        supported_version_reference = self._get_supported_version(version_)
-
-        # If the user has specified something like codeplay-oneapi-amd@6.0-2025.1.0, extract the first part (6.0)
-        version_ = str(version_)
-        if "-" in version_:
-            parts = version_.split('-')
-            return parts[0]
-
-        # If the user has specified nothing, use the latest
-        return supported_version_reference["supported_driver_versions"][0]
-
     def _oneapi_compiler_version(self, version_):
         """
         From the version map, return the oneAPI compiler version based on the plugin version.
@@ -208,32 +150,41 @@ class CodeplayOneapi:
         supported_version_reference = self._get_supported_version(version_)
         return supported_version_reference["ur"]
 
+    def _get_target_driver_version(self, version_, spec):
+        supported_version_reference = self._get_supported_version(version_)
+        target_driver_version = supported_version_reference["supported_driver_versions"][0]
+
+        for supported_driver_version in supported_version_reference["supported_driver_versions"]:
+            if f"{self.backend_name}-{supported_driver_version}" in spec:
+                target_driver_version = supported_driver_version
+
+        print(f"Targeting driver version {target_driver_version}.")
+        return target_driver_version
+
     @staticmethod
     def iterate_supported_versions(supported_versions: list):
         """
         Generator function that will yield values that can be used within plugin classes to set versions and also
         dependencies.
         """
-        first_item = True
+        for index, supported_version in enumerate(supported_versions):
+            yield {
+                "version": supported_version["version"],
+                "sha256": supported_version["sha256"],
+                "preferred": index == 0,
+                "oneapi_compiler_version": supported_version["oneapi_compiler_version"],
+                "supported_driver_versions": supported_version["supported_driver_versions"]
+            }
+
+    @staticmethod
+    def iterate_all_driver_versions(supported_versions: list):
+        found_driver_versions = []
 
         for supported_version in supported_versions:
-            for si, supported_backend_version in enumerate(supported_version["supported_driver_versions"]):
-                yield {
-                    "version": f"{supported_backend_version}-{supported_version['version']}",
-                    "sha256": supported_version["sha256"],
-                    "preferred": False,
-                    "oneapi_compiler_version": supported_version["oneapi_compiler_version"]
-                }
+            found_driver_versions += supported_version["supported_driver_versions"]
 
-                if first_item:
-                    first_item = False
-
-                    yield {
-                        "version": supported_backend_version,
-                        "sha256": supported_version["sha256"],
-                        "preferred": si == 0,
-                        "oneapi_compiler_version": supported_version["oneapi_compiler_version"]
-                    }
+        # Remove duplicates
+        return list(set(found_driver_versions))
 
     @staticmethod
     def _install_file(source, target):
