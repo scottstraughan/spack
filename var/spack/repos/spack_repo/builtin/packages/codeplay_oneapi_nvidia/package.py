@@ -1,4 +1,4 @@
-from spack.directives import maintainers, depends_on, version
+from spack.directives import maintainers, depends_on, version, variant
 from spack_repo.builtin.build_systems.codeplay_oneapi import CodeplayOneapi
 from spack_repo.builtin.build_systems.generic import Package
 
@@ -8,11 +8,12 @@ class CodeplayOneapiNvidia(Package):
     Codeplay oneAPI for NVIDIA GPUs package.
 
     Plugin can be installed in the following ways:
-        - spack install codeplay-nvidia-amd@all-2025.1.0
-        - spack install codeplay-nvidia-amd@all
+        - spack install codeplay-nvidia-amd@2025.1.0 driver=11.7
         - spack install codeplay-nvidia-amd@2025.1.0
         - spack install codeplay-nvidia-amd
     """
+    # Support/home
+    homepage = "https://developer.codeplay.com/products/oneapi/nvidia/home/"
 
     # Supported version list
     supported_versions = [
@@ -28,18 +29,28 @@ class CodeplayOneapiNvidia(Package):
     # Current maintainer of the packages
     maintainers("scottstraughan")
 
-    # Dependencies
-    depends_on("intel-oneapi-compilers")
-
     # Create all the versions
-    for current_version in CodeplayOneapi.iterate_version_map(supported_versions):
-        version(current_version[0], current_version[1], extension="sh", expand=False, preferred=current_version[2])
+    for current_version in CodeplayOneapi.iterate_supported_versions(supported_versions):
+        # Add version
+        version(current_version["version"],
+                current_version["sha256"],
+                extension="sh",
+                expand=False,
+                preferred=current_version["preferred"])
+
+        # Pin the version to the correct intel-oneapi-compilers package
+        depends_on(f"intel-oneapi-compilers@{current_version['oneapi_compiler_version']}",
+                   when=f"@{current_version['version']}")
+
+    # Use variants to change backend driver version
+    drivers = CodeplayOneapi.iterate_all_driver_versions(supported_versions)
+    variant('driver', default=drivers[0], values=drivers, description=f"Change the CUDA driver version")
 
     def __init__(self, spec):
         super().__init__(spec)
 
         # Note: We can't use inheritance since many of the fields are class fields and data would leak between
-        # the shared plugins. Instead, we will use composition of a base plugin and use shared methods.
+        # the shared plugins. Instead, use composition.
         self.codeplay_oneapi = CodeplayOneapi(spec, CodeplayOneapiNvidia.supported_versions, "nvidia")
 
     def install(self, spec, prefix):

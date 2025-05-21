@@ -1,4 +1,3 @@
-import json
 import os
 import stat
 
@@ -26,8 +25,8 @@ class CodeplayOneapi:
         args = "?product=oneapi"
         args += f"&variant={self.gpu_vendor}"
         args += f"&version={self._package_version(version_)}"
-        args += f"&filters[]={self._gpu_driver_version(version_)}"
         args += f"&filters[]=linux"
+        args += f"&via=spack"
 
         return f"https://developer.codeplay.com/api/v1/products/download{args}"
 
@@ -35,41 +34,39 @@ class CodeplayOneapi:
         """
         Install the plugin into the prefix directory and create symlinks into the oneapi compiler directory.
         """
-        print("Resolved version: ")
-        print(json.dumps(self._get_supported_version(version_)))
-
         if not spec.satisfies("%oneapi"):
             raise InstallError("Oneapi is not satisfied")
 
-        print("OneAPI is satisfied!")
+        target_driver_version = self._get_target_driver_version(version_)
+
+        tty.msg(f"Installing {self.gpu_vendor} plugin targeting {self.backend_name} {target_driver_version}")
 
         oneapi_base_path = os.path.join(
             spec["intel-oneapi-compilers"].prefix,
             "compiler",
             self._oneapi_compiler_version(version_),
-            "lib"
-        )
+            "lib")
 
         # Run the plugin installing in extract only mode
         bash = Executable("bash")
         bash(stage.archive_file, "-x", "-f", ".")
 
-        print('Installer extracted successfully')
+        tty.debug(f"Plugin installer has successfully extracted.")
 
         # Install the plugins into all oneapi installation
-        self._install_into_oneapi(prefix, version_, oneapi_base_path)
+        self._install_into_oneapi(prefix, version_, target_driver_version, oneapi_base_path)
 
-        print(f"oneAPI for {self.gpu_vendor} ({self.backend_name}) plugin installation complete.")
+        tty.msg(f"oneAPI for {self.gpu_vendor} ({self.backend_name}) plugin installation complete.")
 
-    def _install_into_oneapi(self, prefix, version_, oneapi_base_path):
+    def _install_into_oneapi(self, prefix, version_, target_driver_version, oneapi_base_path):
         """
         Create all the symlinks into the oneapi compiler directory.
         """
-        print(f"Installing into found oneAPI installation at {oneapi_base_path}.")
+        tty.msg(f"Installing into found oneAPI installation at {oneapi_base_path}.")
 
         # Install the plugin files
         lib_filename = (f"{self.backend_name}"
-                        f"-{self._gpu_driver_version(version_)}"
+                        f"-{target_driver_version}"
                         f"-libur_adapter_{self.backend_name}.so.{self._universal_runtime(version_)}")
 
         source_lib_path = os.path.join(os.getcwd(), lib_filename)
@@ -87,7 +84,7 @@ class CodeplayOneapi:
         for symlink_target in self._get_library_symlink_targets(version_, oneapi_base_path):
             self._create_symlink(target_prefix_lib_path, symlink_target)
 
-        print(f"Successfully installed into found oneAPI installation at {oneapi_base_path}.")
+        tty.msg(f"Successfully installed into found oneAPI installation at {oneapi_base_path}.")
 
     def _get_library_symlink_targets(self, version_, oneapi_base_path):
         """
@@ -105,62 +102,29 @@ class CodeplayOneapi:
         return [os.path.join(oneapi_base_path, x) for x in file_names]
 
     def _get_latest_supported_version(self) -> dict:
+        """
+        Get the latest supported version reference. The list should be in order newest to latest so just return
+        the first items.
+        """
         return self.supported_version_list[0]
 
     def _get_supported_version(self, version_):
         """
-        We can accept various version formats. For example, we will try to the resolve the following:
-        - codeplay-oneapi-amd@6.0-2025.1.0
-        - codeplay-oneapi-amd@6.0
-        - codeplay-oneapi-amd@2025.1.0
-        - codeplay-oneapi-amd
+        Get a version from the version reference list based on the user target version string. If none is provided,
+        will default to the latest.
         """
         version_ = str(version_)
 
         if version_ is None:
+            tty.msg(f"Specific version has not been provided, using latest.")
             return self._get_latest_supported_version()
 
-        package_version = None
-        driver_version = None
+        for supported_version in self.supported_version_list:
+            if supported_version["version"] == version_:
+                tty.msg(f"Found supported version for {version_}, using that.")
+                return supported_version
 
-        if "-" in version_:
-            parts = version_.split("-")
-            driver_version = parts[0]
-            package_version = parts[1]
-
-        found_version_reference = self._get_supported_version_reference(package_version, driver_version)
-
-        # If we have not resolved any version reference by both package and driver version, attempt to load by
-        # package version only
-        if not found_version_reference:
-            found_version_reference = self._get_supported_version_reference(version_, None)
-
-        # If we have not resolved any version reference by both package and driver version, attempt to load by
-        # driver version only
-        if not found_version_reference:
-            found_version_reference = self._get_supported_version_reference(None, version_)
-
-        if not found_version_reference:
-            raise InstallError(f"Could not satisfy a version reference based on version '{version_}'.")
-
-        return found_version_reference
-
-    def _get_supported_version_reference(self, package_version, driver_version):
-        if package_version is not None:
-            found_version = self._get_by_package_version(package_version)
-        else:
-            found_version = self._get_latest_supported_version()
-
-        if found_version is None:
-            return None
-
-        if driver_version is not None:
-            if driver_version in found_version["supported_driver_versions"]:
-                return found_version
-
-            return None
-        else:
-            return driver_version
+        raise InstallError(f"Could not satisfy a version reference based on version '{version_}'.")
 
     def _get_by_package_version(self, package_version):
         """
@@ -168,8 +132,10 @@ class CodeplayOneapi:
         """
         for supported_version in self.supported_version_list:
             if supported_version["version"] == package_version:
+                tty.debug(f"Found targeted version '{package_version}' in supported version list.")
                 return supported_version
 
+        tty.debug(f"Could not find targeted version '{package_version}' in supported version list.")
         return None
 
     def _package_version(self, version_):
@@ -178,21 +144,6 @@ class CodeplayOneapi:
         """
         supported_version_reference = self._get_supported_version(version_)
         return supported_version_reference["version"]
-
-    def _gpu_driver_version(self, version_):
-        """
-        Returns something like 6.0
-        """
-        supported_version_reference = self._get_supported_version(version_)
-
-        # If the user has specified something like codeplay-oneapi-amd@6.0-2025.1.0, extract the first part (6.0)
-        version_ = str(version_)
-        if "-" in version_:
-            parts = version_.split('-')
-            return parts[0]
-
-        # If the user has specified nothing, use the latest
-        return supported_version_reference["supported_driver_versions"][0]
 
     def _oneapi_compiler_version(self, version_):
         """
@@ -208,17 +159,46 @@ class CodeplayOneapi:
         supported_version_reference = self._get_supported_version(version_)
         return supported_version_reference["ur"]
 
+    def _get_target_driver_version(self, version_):
+        """
+        This function attempts to return a target driver version. If the user does not specify a version to install
+        then we will use the latest.
+        """
+        supported_version_reference = self._get_supported_version(version_)
+        latest_driver_version = supported_version_reference["supported_driver_versions"][0]
+
+        if 'driver' in self.spec.variants:
+            tty.debug(f"User has specified a custom driver variant.")
+
+        return self.spec.variants['driver'].value if 'driver' in self.spec.variants else latest_driver_version
+
     @staticmethod
-    def iterate_version_map(supported_versions: list):
-        first_item = True
+    def iterate_supported_versions(supported_versions: list):
+        """
+        Generator function that will yield values that can be used within plugin classes to set versions and also
+        dependencies.
+        """
+        for index, supported_version in enumerate(supported_versions):
+            yield {
+                "version": supported_version["version"],
+                "sha256": supported_version["sha256"],
+                "preferred": index == 0,
+                "oneapi_compiler_version": supported_version["oneapi_compiler_version"],
+                "supported_driver_versions": supported_version["supported_driver_versions"]
+            }
+
+    @staticmethod
+    def iterate_all_driver_versions(supported_versions: list):
+        """
+        Generator function that will spew out a list of supported driver versions.
+        """
+        found_driver_versions = []
 
         for supported_version in supported_versions:
-            for si, supported_backend_version in enumerate(supported_version["supported_driver_versions"]):
-                yield f"{supported_backend_version}-{supported_version['version']}", supported_version["sha256"], False
+            found_driver_versions += supported_version["supported_driver_versions"]
 
-                if first_item:
-                    first_item = False
-                    yield supported_backend_version, supported_version["sha256"], si == 0
+        # Remove duplicates
+        return list(set(found_driver_versions))
 
     @staticmethod
     def _install_file(source, target):
@@ -243,6 +223,6 @@ class CodeplayOneapi:
         if not os.path.exists(target_directory):
             os.makedirs(target_directory)
 
-        print(f"Creating symlink from source '{source_file_path}' to target '{target_path}'")
+        tty.debug(f"Creating symlink from source '{source_file_path}' to target '{target_path}'")
 
         symlink(source_file_path, target_path)

@@ -17,13 +17,10 @@
 You can install plugins the in the following ways:
 
 - `spack install codeplay-oneapi-nvidia` (use latest)
-- `spack install codeplay-oneapi-nvidia@11.7` (specify driver version - use latest package)
-- `spack install codeplay-oneapi-nvidia@11.7-2025.1.0` (specify both driver and package versions)
-- `spack install codeplay-oneapi-nvidia@2025.1.0` - (specify just package version)]
-- `spack install codeplay-oneapi-amd` (use latest)
-- `spack install codeplay-oneapi-amd@5.7` (specify driver version - use latest package)
-- `spack install codeplay-oneapi-amd@6.0-2025.1.0` (specify both driver and package versions)
-- `spack install codeplay-oneapi-amd@2025.1.0` - (specify just package version)
+- `spack install codeplay-oneapi-nvidia driver=11.7` (use latest, target CUDA 11.7)
+- `spack install codeplay-oneapi-nvidia@2025.1.0 driver=11.7` (use 2025.1.0 version, target 11.7)
+- `spack install codeplay-oneapi-nvidia@2025.1.0` - (use 2025.1.0 version, use latest driver)]
+- etc
 
 ### Step 3) Setup Environment
 
@@ -39,4 +36,3 @@ You can install plugins the in the following ways:
 ```bash
     sycl-ls
 ```
-
