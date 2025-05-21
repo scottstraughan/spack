@@ -108,10 +108,12 @@ class CodeplayOneapi:
         version_ = str(version_)
 
         if version_ is None:
+            tty.msg(f"Specific version has not been provided, using latest.")
             return self._get_latest_supported_version()
 
         for supported_version in self.supported_version_list:
             if supported_version["version"] == version_:
+                tty.msg(f"Found supported version for {version_}, using that.")
                 return supported_version
 
         raise InstallError(f"Could not satisfy a version reference based on version '{version_}'.")
