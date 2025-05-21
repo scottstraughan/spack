@@ -35,7 +35,7 @@ class CodeplayOneapi:
         Install the plugin into the prefix directory and create symlinks into the oneapi compiler directory.
         """
         print("Resolved version: ")
-        print(json.dumps(spec))
+        print(spec)
 
         if not spec.satisfies("%oneapi"):
             raise InstallError("Oneapi is not satisfied")
