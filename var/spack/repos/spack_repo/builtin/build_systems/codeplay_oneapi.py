@@ -102,9 +102,17 @@ class CodeplayOneapi:
         return [os.path.join(oneapi_base_path, x) for x in file_names]
 
     def _get_latest_supported_version(self) -> dict:
+        """
+        Get the latest supported version reference. The list should be in order newest to latest so just return
+        the first items.
+        """
         return self.supported_version_list[0]
 
     def _get_supported_version(self, version_):
+        """
+        Get a version from the version reference list based on the user target version string. If none is provided,
+        will default to the latest.
+        """
         version_ = str(version_)
 
         if version_ is None:
@@ -152,6 +160,10 @@ class CodeplayOneapi:
         return supported_version_reference["ur"]
 
     def _get_target_driver_version(self, version_):
+        """
+        This function attempts to return a target driver version. If the user does not specify a version to install
+        then we will use the latest.
+        """
         supported_version_reference = self._get_supported_version(version_)
         latest_driver_version = supported_version_reference["supported_driver_versions"][0]
 
@@ -177,6 +189,9 @@ class CodeplayOneapi:
 
     @staticmethod
     def iterate_all_driver_versions(supported_versions: list):
+        """
+        Generator function that will spew out a list of supported driver versions.
+        """
         found_driver_versions = []
 
         for supported_version in supported_versions:
