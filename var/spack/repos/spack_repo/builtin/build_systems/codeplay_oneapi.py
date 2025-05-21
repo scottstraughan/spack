@@ -154,7 +154,10 @@ class CodeplayOneapi:
         supported_version_reference = self._get_supported_version(version_)
         latest_driver_version = supported_version_reference["supported_driver_versions"][0]
 
-        return self.spec.variants['driver'].value if '+driver' in spec else latest_driver_version
+        print(self.spec.variants['driver'])
+        print(self.spec.variants['driver'].value)
+
+        return self.spec.variants['driver'].value if 'driver' in spec else latest_driver_version
 
     @staticmethod
     def iterate_supported_versions(supported_versions: list):
