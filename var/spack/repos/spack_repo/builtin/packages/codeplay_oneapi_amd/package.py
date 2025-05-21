@@ -1,5 +1,3 @@
-import json
-
 from spack.package import *
 from spack_repo.builtin.build_systems.codeplay_oneapi import CodeplayOneapi
 from spack_repo.builtin.build_systems.generic import Package
@@ -47,9 +45,6 @@ class CodeplayOneapiAmd(Package):
     # Use variants to change backend driver version
     drivers = CodeplayOneapi.iterate_all_driver_versions(supported_versions)
     variant('driver', default=drivers[0], values=drivers, description=f"Change the ROCm driver version")
-
-    print('Creating variants with values:')
-    print(json.dumps(drivers))
 
     def __init__(self, spec):
         super().__init__(spec)
