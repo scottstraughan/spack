@@ -209,16 +209,31 @@ class CodeplayOneapi:
         return supported_version_reference["ur"]
 
     @staticmethod
-    def iterate_version_map(supported_versions: list):
+    def iterate_supported_versions(supported_versions: list):
+        """
+        Generator function that will yield values that can be used within plugin classes to set versions and also
+        dependencies.
+        """
         first_item = True
 
         for supported_version in supported_versions:
             for si, supported_backend_version in enumerate(supported_version["supported_driver_versions"]):
-                yield f"{supported_backend_version}-{supported_version['version']}", supported_version["sha256"], False
+                yield {
+                    "version": f"{supported_backend_version}-{supported_version['version']}",
+                    "sha256": supported_version["sha256"],
+                    "preferred": False,
+                    "oneapi_compiler_version": supported_version["oneapi_compiler_version"]
+                }
 
                 if first_item:
                     first_item = False
-                    yield supported_backend_version, supported_version["sha256"], si == 0
+
+                    yield {
+                        "version": supported_backend_version,
+                        "sha256": supported_version["sha256"],
+                        "preferred": si == 0,
+                        "oneapi_compiler_version": supported_version["oneapi_compiler_version"]
+                    }
 
     @staticmethod
     def _install_file(source, target):

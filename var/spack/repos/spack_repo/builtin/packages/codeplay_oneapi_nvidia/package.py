@@ -28,12 +28,18 @@ class CodeplayOneapiNvidia(Package):
     # Current maintainer of the packages
     maintainers("scottstraughan")
 
-    # Dependencies
-    depends_on("intel-oneapi-compilers")
-
     # Create all the versions
-    for current_version in CodeplayOneapi.iterate_version_map(supported_versions):
-        version(current_version[0], current_version[1], extension="sh", expand=False, preferred=current_version[2])
+    for current_version in CodeplayOneapi.iterate_supported_versions(supported_versions):
+        # Add version
+        version(current_version["version"],
+                current_version["sha256"],
+                extension="sh",
+                expand=False,
+                preferred=current_version["preferred"])
+
+        # Pin the version to the correct intel-oneapi-compilers package
+        depends_on(f"intel-oneapi-compilers@{current_version['oneapi_compiler_version']}",
+                   when=f"@{current_version['version']}")
 
     def __init__(self, spec):
         super().__init__(spec)
