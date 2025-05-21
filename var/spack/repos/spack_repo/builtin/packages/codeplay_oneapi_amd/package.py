@@ -40,10 +40,9 @@ class CodeplayOneapiAmd(Package):
         depends_on(f"intel-oneapi-compilers@{current_version['oneapi_compiler_version']}",
                    when=f"@{current_version['version']}")
 
-    # Iterate all supported driver version, using variants to allow users to select correct version
-    for index, driver_version in enumerate(CodeplayOneapi.iterate_all_driver_versions(supported_versions)):
-        # Variant, used for specifying ROCm driver version
-        variant(f"hip-{driver_version}", default=index == 0, description=f"Enable ROCm {driver_version} driver.")
+    # Use variants to change backend driver version
+    drivers = CodeplayOneapi.iterate_all_driver_versions(supported_versions)
+    variant('driver', default=drivers[0], values=drivers, description=f"Change the ROCm driver version")
 
     def __init__(self, spec):
         super().__init__(spec)
