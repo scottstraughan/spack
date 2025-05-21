@@ -17,9 +17,10 @@
 You can install plugins the in the following ways:
 
 - `spack install codeplay-oneapi-nvidia` (use latest)
-- `spack install codeplay-oneapi-nvidia +cuda-11.7` (use latest, target CUDA 11.7)
-- `spack install codeplay-oneapi-nvidia@2025.1.0 +cuda-11.7` (use 2025.1.0 version, target 11.7)
+- `spack install codeplay-oneapi-nvidia driver=11.7` (use latest, target CUDA 11.7)
+- `spack install codeplay-oneapi-nvidia@2025.1.0 driver=11.7` (use 2025.1.0 version, target 11.7)
 - `spack install codeplay-oneapi-nvidia@2025.1.0` - (use 2025.1.0 version, use latest driver)]
+- etc
 
 ### Step 3) Setup Environment
 

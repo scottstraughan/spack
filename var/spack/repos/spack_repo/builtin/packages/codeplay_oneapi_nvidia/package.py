@@ -8,10 +8,12 @@ class CodeplayOneapiNvidia(Package):
     Codeplay oneAPI for NVIDIA GPUs package.
 
     Plugin can be installed in the following ways:
-        - spack install codeplay-nvidia-amd@2025.1.0 +cuda-11.7
+        - spack install codeplay-nvidia-amd@2025.1.0 driver=11.7
         - spack install codeplay-nvidia-amd@2025.1.0
         - spack install codeplay-nvidia-amd
     """
+    # Support/home
+    homepage = "https://developer.codeplay.com/products/oneapi/nvidia/home/"
 
     # Supported version list
     supported_versions = [

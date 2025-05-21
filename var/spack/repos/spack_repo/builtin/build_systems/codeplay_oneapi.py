@@ -1,4 +1,3 @@
-import json
 import os
 import stat
 
@@ -27,6 +26,7 @@ class CodeplayOneapi:
         args += f"&variant={self.gpu_vendor}"
         args += f"&version={self._package_version(version_)}"
         args += f"&filters[]=linux"
+        args += f"&via=spack"
 
         return f"https://developer.codeplay.com/api/v1/products/download{args}"
 
@@ -34,15 +34,12 @@ class CodeplayOneapi:
         """
         Install the plugin into the prefix directory and create symlinks into the oneapi compiler directory.
         """
-        print("Resolved version: ")
-        print(spec)
-
         if not spec.satisfies("%oneapi"):
             raise InstallError("Oneapi is not satisfied")
 
-        target_driver_version = self._get_target_driver_version(version_, spec)
+        target_driver_version = self._get_target_driver_version(version_)
 
-        print(f"OneAPI is satisfied! Targeting {target_driver_version}")
+        tty.msg(f"Installing {self.gpu_vendor} plugin targeting {self.backend_name} {target_driver_version}")
 
         oneapi_base_path = os.path.join(
             spec["intel-oneapi-compilers"].prefix,
@@ -54,18 +51,18 @@ class CodeplayOneapi:
         bash = Executable("bash")
         bash(stage.archive_file, "-x", "-f", ".")
 
-        print('Installer extracted successfully')
+        tty.debug(f"Plugin installer has successfully extracted.")
 
         # Install the plugins into all oneapi installation
         self._install_into_oneapi(prefix, version_, target_driver_version, oneapi_base_path)
 
-        print(f"oneAPI for {self.gpu_vendor} ({self.backend_name}) plugin installation complete.")
+        tty.msg(f"oneAPI for {self.gpu_vendor} ({self.backend_name}) plugin installation complete.")
 
     def _install_into_oneapi(self, prefix, version_, target_driver_version, oneapi_base_path):
         """
         Create all the symlinks into the oneapi compiler directory.
         """
-        print(f"Installing into found oneAPI installation at {oneapi_base_path}.")
+        tty.msg(f"Installing into found oneAPI installation at {oneapi_base_path}.")
 
         # Install the plugin files
         lib_filename = (f"{self.backend_name}"
@@ -87,7 +84,7 @@ class CodeplayOneapi:
         for symlink_target in self._get_library_symlink_targets(version_, oneapi_base_path):
             self._create_symlink(target_prefix_lib_path, symlink_target)
 
-        print(f"Successfully installed into found oneAPI installation at {oneapi_base_path}.")
+        tty.msg(f"Successfully installed into found oneAPI installation at {oneapi_base_path}.")
 
     def _get_library_symlink_targets(self, version_, oneapi_base_path):
         """
@@ -125,8 +122,10 @@ class CodeplayOneapi:
         """
         for supported_version in self.supported_version_list:
             if supported_version["version"] == package_version:
+                tty.debug(f"Found targeted version '{package_version}' in supported version list.")
                 return supported_version
 
+        tty.debug(f"Could not find targeted version '{package_version}' in supported version list.")
         return None
 
     def _package_version(self, version_):
@@ -150,12 +149,12 @@ class CodeplayOneapi:
         supported_version_reference = self._get_supported_version(version_)
         return supported_version_reference["ur"]
 
-    def _get_target_driver_version(self, version_, spec):
+    def _get_target_driver_version(self, version_):
         supported_version_reference = self._get_supported_version(version_)
         latest_driver_version = supported_version_reference["supported_driver_versions"][0]
 
-        print(self.spec.variants['driver'])
-        print(self.spec.variants['driver'].value)
+        if 'driver' in self.spec.variants:
+            tty.debug(f"User has specified a custom driver variant.")
 
         return self.spec.variants['driver'].value if 'driver' in self.spec.variants else latest_driver_version
 
@@ -207,6 +206,6 @@ class CodeplayOneapi:
         if not os.path.exists(target_directory):
             os.makedirs(target_directory)
 
-        print(f"Creating symlink from source '{source_file_path}' to target '{target_path}'")
+        tty.debug(f"Creating symlink from source '{source_file_path}' to target '{target_path}'")
 
         symlink(source_file_path, target_path)

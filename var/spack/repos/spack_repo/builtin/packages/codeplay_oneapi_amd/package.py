@@ -11,9 +11,11 @@ class CodeplayOneapiAmd(Package):
 
     Plugin can be installed in the following ways:
         - spack install codeplay-oneapi-amd@2025.1.0
-        - spack install codeplay-oneapi-amd@2025.1.0 +hip-5.7
+        - spack install codeplay-oneapi-amd@2025.1.0 driver=5.7
         - spack install codeplay-oneapi-amd
     """
+    # Support/home
+    homepage = "https://developer.codeplay.com/products/oneapi/amd/home/"
 
     # Supported versions list
     supported_versions = [
