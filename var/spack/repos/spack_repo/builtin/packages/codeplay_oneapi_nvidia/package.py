@@ -48,7 +48,7 @@ class CodeplayOneapiNvidia(Package):
         super().__init__(spec)
 
         # Note: We can't use inheritance since many of the fields are class fields and data would leak between
-        # the shared plugins. Instead, we will use composition of a base plugin and use shared methods.
+        # the shared plugins. Instead, use composition.
         self.codeplay_oneapi = CodeplayOneapi(spec, CodeplayOneapiNvidia.supported_versions, "nvidia")
 
     def install(self, spec, prefix):

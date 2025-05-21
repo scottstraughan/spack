@@ -1,3 +1,5 @@
+import json
+
 from spack.package import *
 from spack_repo.builtin.build_systems.codeplay_oneapi import CodeplayOneapi
 from spack_repo.builtin.build_systems.generic import Package
@@ -44,11 +46,14 @@ class CodeplayOneapiAmd(Package):
     drivers = CodeplayOneapi.iterate_all_driver_versions(supported_versions)
     variant('driver', default=drivers[0], values=drivers, description=f"Change the ROCm driver version")
 
+    print('Creating variants with values:')
+    print(json.dumps(drivers))
+
     def __init__(self, spec):
         super().__init__(spec)
 
         # Note: We can't use inheritance since many of the fields are class fields and data would leak between
-        # the shared plugins. Instead, we will use composition of a base plugin and use shared methods.
+        # the shared plugins. Instead, use composition.
         self.codeplay_oneapi = CodeplayOneapi(spec, CodeplayOneapiAmd.supported_versions, "amd")
 
     def install(self, spec, prefix):
