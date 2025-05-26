@@ -1,4 +1,6 @@
-## Example Usage
+# Example Usage
+
+## Install Codeplay oneAPI Plugins
 
 ### Step 1) Setup Spack
 
@@ -12,14 +14,16 @@
 
 ```bash
     spack install codeplay-oneapi-nvidia
+    spack install codeplay-oneapi-amd
 ```
 
-You can install plugins the in the following ways:
+**You can install plugins the in the following ways:**
 
 - `spack install codeplay-oneapi-nvidia` (use latest)
 - `spack install codeplay-oneapi-nvidia driver=11.7` (use latest, target CUDA 11.7)
 - `spack install codeplay-oneapi-nvidia@2025.1.0 driver=11.7` (use 2025.1.0 version, target 11.7)
 - `spack install codeplay-oneapi-nvidia@2025.1.0` - (use 2025.1.0 version, use latest driver)]
+- `spack install codeplay-oneapi-amd` (use latest)
 - etc
 
 ### Step 3) Setup Environment
@@ -36,3 +40,7 @@ You can install plugins the in the following ways:
 ```bash
     sycl-ls
 ```
+
+## Support
+
+Please contact scotts@codeplay.com
