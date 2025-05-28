@@ -68,10 +68,8 @@ class CodeplayOneapiNvidia(Package):
         """
         Generate a URL to download from developer portal.
         """
-        tty.msg(self.spec)
-        tty.msg('Driver Target: ', self.codeplay_oneapi.get_target_driver_version(version))
-
-        url = self.codeplay_oneapi.url_for_version(version)
+        url = self.codeplay_oneapi.url_for_version(
+            version, self.codeplay_oneapi.get_target_driver_version(version))
 
         # Small hack as we transition to universal driver packages
         return url.replace("11.7", "all")

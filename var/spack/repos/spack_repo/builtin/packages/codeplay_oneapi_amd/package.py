@@ -22,16 +22,19 @@ class CodeplayOneapi:
         self.gpu_vendor = gpu_vendor
         self.backend_name = "hip" if gpu_vendor == "amd" else "cuda"
 
-    def url_for_version(self, version_):
+    def url_for_version(self, version_, driver_version=None):
         """
         Generate a URL for a specific version of the plugin that can be used to download from the Codeplay
         developer portal.
         """
         args = "?product=oneapi"
+        args += f"&via=spack"
         args += f"&variant={self.gpu_vendor}"
         args += f"&version={self._package_version(version_)}"
         args += f"&filters[]=linux"
-        args += f"&via=spack"
+
+        if driver_version:
+            args += f"&filters[]=={driver_version}"
 
         return f"https://developer.codeplay.com/api/v1/products/download{args}"
 
@@ -289,6 +292,5 @@ class CodeplayOneapiAmd(Package):
         """
         Generate a URL to download from developer portal.
         """
-        tty.msg(self.spec)
-        tty.msg('Driver Target: ', self.codeplay_oneapi.get_target_driver_version(version))
-        return self.codeplay_oneapi.url_for_version(version)
+        return self.codeplay_oneapi.url_for_version(
+            version, self.codeplay_oneapi.get_target_driver_version(version))
