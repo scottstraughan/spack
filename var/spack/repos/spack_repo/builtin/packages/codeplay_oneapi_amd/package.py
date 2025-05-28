@@ -34,7 +34,7 @@ class CodeplayOneapi:
         args += f"&filters[]=linux"
 
         if driver_version:
-            args += f"&filters[]=={driver_version}"
+            args += f"&filters[]={driver_version}"
 
         return f"https://developer.codeplay.com/api/v1/products/download{args}"
 
