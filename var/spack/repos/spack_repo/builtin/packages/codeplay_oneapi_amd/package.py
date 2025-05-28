@@ -289,6 +289,6 @@ class CodeplayOneapiAmd(Package):
         """
         Generate a URL to download from developer portal.
         """
-        print(self.spec)
-        print('Driver Target: ', self.codeplay_oneapi.get_target_driver_version(version))
+        tty.msg(self.spec)
+        tty.msg('Driver Target: ', self.codeplay_oneapi.get_target_driver_version(version))
         return self.codeplay_oneapi.url_for_version(version)
