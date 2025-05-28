@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 from spack.directives import maintainers, depends_on, version, variant
-from spack.package import tty
 from spack_repo.builtin.build_systems.generic import Package
 from spack_repo.builtin.packages.codeplay_oneapi_amd.package import CodeplayOneapi
 
