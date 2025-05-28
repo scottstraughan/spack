@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 from spack.directives import maintainers, depends_on, version, variant
+from spack.package import tty
 from spack_repo.builtin.build_systems.generic import Package
 from spack_repo.builtin.packages.codeplay_oneapi_amd.package import CodeplayOneapi
 
@@ -67,6 +68,9 @@ class CodeplayOneapiNvidia(Package):
         """
         Generate a URL to download from developer portal.
         """
+        tty.msg(self.spec)
+        tty.msg('Driver Target: ', self.codeplay_oneapi.get_target_driver_version(version))
+
         url = self.codeplay_oneapi.url_for_version(version)
 
         # Small hack as we transition to universal driver packages
