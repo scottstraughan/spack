@@ -42,7 +42,7 @@ class CodeplayOneapi:
         if not spec.satisfies("%oneapi"):
             raise InstallError("Oneapi is not satisfied.")
 
-        target_driver_version = self._get_target_driver_version(version_)
+        target_driver_version = self.get_target_driver_version(version_)
 
         tty.msg(f"Installing {self.gpu_vendor} plugin targeting {self.backend_name} {target_driver_version}")
 
@@ -161,7 +161,7 @@ class CodeplayOneapi:
         """
         return self._get_supported_version(version_)["ur"]
 
-    def _get_target_driver_version(self, version_):
+    def get_target_driver_version(self, version_):
         """
         This function attempts to return a target driver version. If the user does not specify a version to install
         then we will use the latest.
@@ -289,4 +289,6 @@ class CodeplayOneapiAmd(Package):
         """
         Generate a URL to download from developer portal.
         """
+        print(self.spec)
+        print('Driver Target: ', self.codeplay_oneapi.get_target_driver_version(version))
         return self.codeplay_oneapi.url_for_version(version)
