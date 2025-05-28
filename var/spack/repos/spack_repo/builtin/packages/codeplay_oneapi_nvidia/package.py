@@ -1,6 +1,10 @@
+# Copyright Spack Project Developers. See COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR MIT)
+
 from spack.directives import maintainers, depends_on, version, variant
-from spack_repo.builtin.build_systems.codeplay_oneapi import CodeplayOneapi
 from spack_repo.builtin.build_systems.generic import Package
+from spack_repo.builtin.packages.codeplay_oneapi_amd.package import CodeplayOneapi
 
 
 class CodeplayOneapiNvidia(Package):
