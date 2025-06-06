@@ -48,7 +48,15 @@ class CodeplayOneapi:
         if not spec.satisfies("%oneapi"):
             raise InstallError("Oneapi is not satisfied.")
 
-        target_driver_version = self.get_target_driver_version(version_)
+        # Get the target driver version
+        target_driver_version = self.get_target_driver_version()
+
+        if target_driver_version is None:
+            raise InstallError(
+                f"No specified driver version for {self.backend_name} was provided and "
+                f"none could be found in spec. Please provide a valid version using "
+                f"driver=VERSION when installing."
+            )
 
         tty.msg(
             f"Installing {self.gpu_vendor} plugin targeting "
@@ -168,23 +176,29 @@ class CodeplayOneapi:
         """
         return self._get_supported_version(version_)["ur"]
 
-    def get_target_driver_version(self, version_):
+    def get_target_driver_version(self):
         """
-        This function attempts to return a target driver version. If the user does not specify
-        a version to install then we will use the latest.
+        This function attempts to guess the target driver version. Firstly, if the user has
+        provided a value via driver=VERSION when installing, we will use that. If that is
+        not specified, we will attempt to use the installed system version.
         """
-        latest_driver_version = (self._get_supported_version(version_))[
-            "supported_driver_versions"
-        ][0]
-
         if "driver" in self.spec.variants:
-            tty.debug("User has specified a custom driver variant.")
+            target_driver_version = self.spec.variants["driver"].value
+            tty.msg(
+                f"User has specified a custom driver variant, targeting {target_driver_version}."
+            )
 
-        return (
-            self.spec.variants["driver"].value
-            if "driver" in self.spec.variants
-            else latest_driver_version
-        )
+            return target_driver_version
+        elif self.backend_name in self.spec:
+            target_driver_version = self.spec[self.backend_name].version
+            tty.msg(
+                f"User did not specific target driver, found system install, "
+                f"targeting {target_driver_version}."
+            )
+
+            return target_driver_version
+
+        return None
 
     @staticmethod
     def iterate_supported_versions(supported_versions: dict):
@@ -329,5 +343,5 @@ class CodeplayOneapiAmd(Package):
         Generate a URL to download from developer portal.
         """
         return self.codeplay_oneapi.url_for_version(
-            version, self.codeplay_oneapi.get_target_driver_version(version)
+            version, self.codeplay_oneapi.get_target_driver_version()
         )
