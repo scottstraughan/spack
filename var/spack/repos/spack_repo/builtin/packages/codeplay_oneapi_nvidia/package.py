@@ -61,7 +61,7 @@ class CodeplayOneapiNvidia(Package):
     drivers = CodeplayOneapi.iterate_all_driver_versions(supported_versions)
 
     variant(
-        "driver", default=None, values=drivers, description="Change the CUDA driver version"
+        "driver", values=drivers, description="Change the CUDA driver version"
     )
 
     def __init__(self, spec):
