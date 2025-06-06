@@ -322,7 +322,7 @@ class CodeplayOneapiAmd(Package):
     drivers = CodeplayOneapi.iterate_all_driver_versions(supported_versions)
 
     variant(
-        "driver", default=drivers[0], values=drivers, description="Change the ROCm driver version"
+        "driver", default=None, values=drivers, description="Change the ROCm driver version"
     )
 
     def __init__(self, spec):
