@@ -182,18 +182,25 @@ class CodeplayOneapi:
         provided a value via driver=VERSION when installing, we will use that. If that is
         not specified, we will attempt to use the installed system version.
         """
+        tty.msg(self.spec)
+
         if "driver" in self.spec.variants:
             target_driver_version = self.spec.variants["driver"].value
 
-            if target_driver_version == "system" and self.backend_name in self.spec:
-                target_driver_version = self.spec[self.backend_name].version
+            if target_driver_version == "system":
+                if self.backend_name in self.spec:
+                    target_driver_version = self.spec[self.backend_name].version
 
-                tty.msg(
-                    f"User did not specific target driver, found system install, "
-                    f"targeting {target_driver_version}."
-                )
+                    tty.msg(
+                        f"User did not specific target driver, found system install, "
+                        f"targeting {target_driver_version}."
+                    )
 
-                return target_driver_version
+                    return target_driver_version
+                else:
+                    tty.msg(
+                        f"User did not specific target driver and could not find a system version."
+                    )
             else:
                 tty.msg(
                     f"User has specified a custom driver variant, using {target_driver_version}."
